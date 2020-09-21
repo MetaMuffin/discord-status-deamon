@@ -14,11 +14,12 @@ The daemon is a nodejs-server where a patched discord version can connect and up
     - Optionally you can setup something that automatically runs this command when you log in.
 1. Patch your Discord client
     - Find the file `~/.config/discord/0.<version here>/modules/discord_voice/index.js`
-    - Insert a require statement for the patch before the first line
+    - Insert a require statement for the patch before the first line to `mod.js` in the repo
         - This should look something like: `require("../../../../../path/to/mod");` (do not append the `js` file extension)
     - Reload discord. (Probably `Ctrl+R`)
 1. Integrate this into your bar or anywhere you like. (see below)
     - Use `curl -sL http://127.0.0.1:8123/status` to get the status
+1. Configure stuff in `config.ts`
 
 ## Polybar module
 
@@ -32,3 +33,7 @@ interval = 1
 label = "Discord: %output%"
 label-foreground = #440099
 ```
+
+## Todo
+
+- A automatic way of patching discord

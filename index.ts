@@ -27,7 +27,7 @@ app.get("/status",(req,res) => {
     if (config.showSelfStatus) {
         bar += config.selfStatusLabel + config.colorReset
         bar += state.self_muted ? `${config.flagColor}M${config.colorReset}` : " "
-        bar += state.self_muted ? `${config.flagColor}M${config.colorReset}` : " "
+        bar += state.self_deaf ? `${config.flagColor}D${config.colorReset}` : " "
         bar += config.colorReset + config.modSeperator + config.colorReset
     }
 
