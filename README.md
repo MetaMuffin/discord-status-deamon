@@ -4,6 +4,8 @@ A daemon to provide status about information of users in discord channels and mo
 
 The daemon is a nodejs-server where a patched discord version can connect and update the stored information. The formated status can be dowloaded via http (i.e. curl)
 
+Note: The daemon only provides information about the server that is currently selected in the discord ui as it reads from the html source.
+
 ## Installation
 
 1. Setting up the server

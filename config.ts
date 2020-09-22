@@ -2,6 +2,7 @@
 export const config = {
     
     colorReset: "%{F-}%{B-}%{U-}",
+    errorColor: "%{F#F00}%{B#000}",
     modSeperator: " | ",
 
     showUsers: true,

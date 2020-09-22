@@ -16,9 +16,10 @@ export interface State {
     }>,
     self_deaf: boolean,
     self_muted: boolean,
+    no_user_info: boolean,
 }
 
-var state:State = {users:undefined,self_deaf: false, self_muted: false}
+var state:State = {users:undefined,self_deaf: false, self_muted: false, no_user_info: true}
 
 app.get("/status",(req,res) => {
     var bar = ""
@@ -32,6 +33,7 @@ app.get("/status",(req,res) => {
     }
 
     if (config.showUsers) {
+        if (state.no_user_info) bar += config.errorColor + "No user info" + config.colorReset
         bar += state.users.map(u => {
             var color = config.defaultColor;
             if (u.speaking) color = config.speakingColor; 
