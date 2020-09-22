@@ -19,6 +19,7 @@ Note: The daemon only provides information about the server that is currently se
     - Insert a require statement for the patch before the first line to `mod.js` in the repo
         - This should look something like: `require("../../../../../path/to/mod");` (do not append the `js` file extension)
     - Reload discord. (Probably `Ctrl+R`)
+    - You can check if the injection worked if you see something in the discord console (Open with `Ctrl+Shift+I`)
 1. Integrate this into your bar or anywhere you like. (see below)
     - Use `curl -sL http://127.0.0.1:8123/status` to get the status
 1. Configure stuff in `config.ts`

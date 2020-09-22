@@ -1,4 +1,6 @@
-console.log('%c Muffins Mod Loaded!', 'background: #000000; color: #FF0000; font-size: 3rem');
+console.log('%c Discord Status Deamon injection worked!', 'background: #000000; color: #FF0000; font-size: 3rem');
+console.log('%c https://github.com/MetaMuffin/discord-status-deamon', 'background: #000000; color: #00FF00; font-size: 1rem');
+
 try {
     setInterval(() => {
         var root = document.getElementById("app-mount")
