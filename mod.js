@@ -6,7 +6,7 @@ try {
         var root = document.getElementById("app-mount")
         var self_bottom_bar = root.children[3].children[0].children[1].children[0].children[0].children[1].children[0].children[0].children[1].children[1].children[2]
         var self_muted = self_bottom_bar.children[0].getAttribute("aria-checked") == "true"
-        var self_deaf = self_bottom_bar.children[0].getAttribute("aria-checked") == "true"
+        var self_deaf = self_bottom_bar.children[1].getAttribute("aria-checked") == "true"
         var users = []
         var no_user_info = false
     
