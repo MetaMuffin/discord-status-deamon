@@ -7,7 +7,8 @@ try {
         var self_bottom_bar = root.children[3].children[0].children[1].children[0].children[0].children[1].children[0].children[0].children[1].children[1].children[2]
         var self_muted = self_bottom_bar.children[0].getAttribute("aria-checked") == "true"
         var self_deaf = self_bottom_bar.children[1].getAttribute("aria-checked") == "true"
-        var users = []
+        var self_name = root.children[3].children[0].children[1].children[0].children[0].children[1].children[0].children[0].children[1].children[1].children[1].children[0].children[0].textContent
+        var channels = []
         var no_user_info = false
     
         try {
@@ -19,6 +20,7 @@ try {
             for (const ch_e of ch_list.children) {
                 if (!ch_e.children) continue
                 if (ch_e.children[1]) {
+                    var users = []
                     for (const user_e of ch_e.children[1].children) {
                         var user_c = user_e.children[0].children[0]
                         var username = user_c.children[1].textContent
@@ -46,7 +48,8 @@ try {
                         }
                         users.push(user_data)
                     }
-                } 
+                    channels.push(users)
+                }
             }
         }
 
@@ -62,10 +65,11 @@ try {
             redirect: 'follow',
             referrerPolicy: 'no-referrer',
             body: JSON.stringify({
-                users,
+                channels,
                 self_deaf,
                 self_muted,
                 no_user_info,
+                self_name
             })
         });
         

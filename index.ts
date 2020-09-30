@@ -8,22 +8,23 @@ const app = express()
 app.use(bodyParser.json())
 
 export interface State {
-    users: undefined | Array<{
+    channels: undefined | Array<Array<{
         mute_state: number,
         username: string,
         speaking: boolean,
         streaming: boolean,
-    }>,
+    }>>,
     self_deaf: boolean,
     self_muted: boolean,
+    self_name: string,
     no_user_info: boolean,
 }
 
-var state:State = {users:undefined,self_deaf: false, self_muted: false, no_user_info: true}
+var state:State = {channels:undefined,self_deaf: false, self_muted: false, no_user_info: true,self_name: ""}
 
 app.get("/status",(req,res) => {
     var bar = ""
-    if (!state.users) return res.send("Cant get info")
+    if (!state.channels) return res.send("Cant get info")
     
     if (config.showSelfStatus) {
         bar += config.selfStatusLabel + config.colorReset
@@ -34,21 +35,26 @@ app.get("/status",(req,res) => {
 
     if (config.showUsers) {
         if (state.no_user_info) bar += config.errorColor + "No user info" + config.colorReset
-        bar += state.users.map(u => {
-            var color = config.defaultColor;
-            if (u.speaking) color = config.speakingColor; 
-            if (u.mute_state > 0) color = config.mutedColor;
-            if (u.mute_state > 1) color = config.deafColor;
-            if (u.streaming) color += config.streamingColor;
-            
-            var flags = config.showFlags ? (" "
-            + (u.speaking ? `${config.flagColor}S${config.colorReset}` : " ")
-            + ((u.mute_state > 0) ? `${config.flagColor}M${config.colorReset}` : " ")
-            + ((u.mute_state > 1) ? `${config.flagColor}D${config.colorReset}` : " ")
-            + ((u.streaming) ? `${config.flagColor}V${config.colorReset}` : " ")
-            ) : ""
-            return `${color}${u.username}${config.colorReset}${flags}`
-        }).join(config.userSeperator)
+        var chs_filtered = state.channels.filter(ch => (ch.length > 0))
+
+        bar += chs_filtered.map(ch => {
+            if (!ch.find(u => (u.username == state.self_name)) && config.onlyShowCurrentChannel) return "";
+            return ch.map(u => {
+                var color = config.defaultColor;
+                if (u.speaking) color = config.speakingColor; 
+                if (u.mute_state > 0) color = config.mutedColor;
+                if (u.mute_state > 1) color = config.deafColor;
+                if (u.streaming) color += config.streamingColor;
+                
+                var flags = config.showFlags ? (" "
+                    + (u.speaking ? `${config.flagColor}S${config.colorReset}` : " ")
+                    + ((u.mute_state > 0) ? `${config.flagColor}M${config.colorReset}` : " ")
+                    + ((u.mute_state > 1) ? `${config.flagColor}D${config.colorReset}` : " ")
+                    + ((u.streaming) ? `${config.flagColor}V${config.colorReset}` : " ")
+                ) : ""
+                return `${color}${u.username}${config.colorReset}${flags}`
+            }).join(config.userSeperator)
+        }).join(config.onlyShowCurrentChannel ? "" : config.channelSeperator)
     }
     
     res.send(bar)
