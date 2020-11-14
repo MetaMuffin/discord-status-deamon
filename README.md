@@ -24,6 +24,12 @@ Note: The daemon only provides information about the server that is currently se
     - Use `curl -sL http://127.0.0.1:8123/status` to get the status
 1. Configure stuff in `config.ts`
 
+## Alternative Installation
+
+You can try to use the `patch.sh` script to automatically add the require statement on linux.
+
+
+
 ## Polybar module
 
 A sample polybar module
