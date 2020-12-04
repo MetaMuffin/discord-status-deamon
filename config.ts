@@ -21,4 +21,7 @@ export const config = {
     showSelfStatus: true,
     selfStatusLabel: "%{U#409}ME: ",
 
+    speakStartCommand: "rhythmbox-client --set-volume $(cat /tmp/dvol-start)",
+    speakStopCommand: "rhythmbox-client --set-volume $(cat /tmp/dvol-stop)",
+
 }

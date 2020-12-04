@@ -3,6 +3,7 @@ import express from "express"
 import bodyParser from "body-parser"
 import cors from "cors"
 import { config } from "./config"
+import { exec } from "child_process"
 
 const app = express()
 app.use(bodyParser.json())
@@ -20,12 +21,12 @@ export interface State {
     no_user_info: boolean,
 }
 
-var state:State = {channels:undefined,self_deaf: false, self_muted: false, no_user_info: true,self_name: ""}
+var state: State = { channels: undefined, self_deaf: false, self_muted: false, no_user_info: true, self_name: "" }
 
-app.get("/status",(req,res) => {
+app.get("/status", (req, res) => {
     var bar = ""
     if (!state.channels) return res.send("Cant get info")
-    
+
     if (config.showSelfStatus) {
         bar += config.selfStatusLabel + config.colorReset
         bar += state.self_muted ? `${config.flagColor}M${config.colorReset}` : " "
@@ -41,11 +42,11 @@ app.get("/status",(req,res) => {
             if (!ch.find(u => (u.username == state.self_name)) && config.onlyShowCurrentChannel) return "";
             return ch.map(u => {
                 var color = config.defaultColor;
-                if (u.speaking) color = config.speakingColor; 
+                if (u.speaking) color = config.speakingColor;
                 if (u.mute_state > 0) color = config.mutedColor;
                 if (u.mute_state > 1) color = config.deafColor;
                 if (u.streaming) color += config.streamingColor;
-                
+
                 var flags = config.showFlags ? (" "
                     + (u.speaking ? `${config.flagColor}S${config.colorReset}` : " ")
                     + ((u.mute_state > 0) ? `${config.flagColor}M${config.colorReset}` : " ")
@@ -56,17 +57,33 @@ app.get("/status",(req,res) => {
             }).join(config.userSeperator)
         }).join(config.onlyShowCurrentChannel ? "" : config.channelSeperator)
     }
-    
+
     res.send(bar)
 })
 
+var speaking_last = false
+
 app.options("/update", cors())
-app.post("/update", cors(), (req,res) => {
+app.post("/update", cors(), (req, res) => {
     state = req.body;
     res.send("OK")
+    var any_speaking = false
+    for (const ch of state?.channels || []) {
+        for (const u of ch) {
+            if (u.speaking) any_speaking = true
+        }
+    }
+    if (speaking_last != any_speaking) {
+        if (any_speaking) {
+            exec(config.speakStartCommand)
+        } else {
+            exec(config.speakStopCommand)
+        }
+    }
+    speaking_last = any_speaking
 })
 
 
-app.listen(8123,"127.0.0.1",() => {
+app.listen(8123, "127.0.0.1", () => {
     console.log("Server running!");
 })
