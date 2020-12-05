@@ -6,7 +6,8 @@ export const config = {
     modSeperator: "  || ",
     
     showUsers: true,
-    onlyShowCurrentChannel: false, // This will only work if you dont change your nickname on the server. If somebody else has your name it will also show the users in his channel.
+    onlyShowCurrentChannel: false, // This will only work if you dont change your nickname on the server or add it to the list of your nicknames. If somebody else has your name it will also show the users in his channel.
+    alternateNicknames: ["nom nom nom"],
     defaultColor: "%{F#409}",
     deafColor: "%{B#666}%{F#FFF}",
     mutedColor: "%{B#333}%{F#FFF}",

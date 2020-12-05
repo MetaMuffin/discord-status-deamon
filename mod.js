@@ -1,7 +1,42 @@
+const { connect } = require("http2");
+
 console.log('%c Discord Status Deamon injection worked!', 'background: #000000; color: #FF0000; font-size: 3rem');
 console.log('%c https://github.com/MetaMuffin/discord-status-deamon', 'background: #000000; color: #00FF00; font-size: 1rem');
 
 try {
+    // PATCH CONFIG
+    var useWs = true
+    var interval = useWs ? 300 : 1000
+
+    var ws;
+
+    const connect = () => {
+        ws = new WebSocket("ws://127.0.0.1:8123/ws-update")
+        ws.onclose = () => {
+            setTimeout(connect,1000)
+        }
+    }
+    if (useWs) connect()
+
+    const post = (data) => {
+        if (useWs && ws.OPEN) {
+            ws.send(JSON.stringify(data))
+        } else {
+            fetch("http://127.0.0.1:8123/update", {
+                method: 'POST',
+                mode: 'cors',
+                cache: 'no-cache',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                redirect: 'follow',
+                referrerPolicy: 'no-referrer',
+                body: JSON.stringify(data)
+            });
+        }
+
+    }
+
     setInterval(() => {
         var root = document.getElementById("app-mount")
         var self_bottom_bar = root.children[3].children[0].children[1].children[0].children[0].children[1].children[0].children[0].children[1].children[1].children[2]
@@ -53,27 +88,14 @@ try {
             }
         }
 
-
-
-        fetch("http://127.0.0.1:8123/update", {
-            method: 'POST',
-            mode: 'cors',
-            cache: 'no-cache',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            redirect: 'follow',
-            referrerPolicy: 'no-referrer',
-            body: JSON.stringify({
-                channels,
-                self_deaf,
-                self_muted,
-                no_user_info,
-                self_name
-            })
-        });
-        
-    }, 1000)
+        post({
+            channels,
+            self_deaf,
+            self_muted,
+            no_user_info,
+            self_name
+        })
+    }, interval)
 } catch (e) {
     console.log("ERROROROOR");
     console.log(e);

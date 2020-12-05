@@ -4,9 +4,13 @@ import bodyParser from "body-parser"
 import cors from "cors"
 import { config } from "./config"
 import { exec } from "child_process"
+import expressWs from "express-ws"
+import { EventEmitter } from "events"
+import { argv } from "process"
 
 const app = express()
 app.use(bodyParser.json())
+const appws = expressWs(app).app
 
 export interface State {
     channels: undefined | Array<Array<{
@@ -23,9 +27,11 @@ export interface State {
 
 var state: State = { channels: undefined, self_deaf: false, self_muted: false, no_user_info: true, self_name: "" }
 
-app.get("/status", (req, res) => {
+var updateEmitter = new EventEmitter();
+
+export function getBar(): string {
+    if (!state.channels) return "Cant get info"
     var bar = ""
-    if (!state.channels) return res.send("Cant get info")
 
     if (config.showSelfStatus) {
         bar += config.selfStatusLabel + config.colorReset
@@ -39,7 +45,7 @@ app.get("/status", (req, res) => {
         var chs_filtered = state.channels.filter(ch => (ch.length > 0))
 
         bar += chs_filtered.map(ch => {
-            if (!ch.find(u => (u.username == state.self_name)) && config.onlyShowCurrentChannel) return "";
+            if (!ch.find(u => (u.username == state.self_name || config.alternateNicknames?.includes(state.self_name))) && config.onlyShowCurrentChannel) return "";
             return ch.map(u => {
                 var color = config.defaultColor;
                 if (u.speaking) color = config.speakingColor;
@@ -57,16 +63,10 @@ app.get("/status", (req, res) => {
             }).join(config.userSeperator)
         }).join(config.onlyShowCurrentChannel ? "" : config.channelSeperator)
     }
+    return bar
+}
 
-    res.send(bar)
-})
-
-var speaking_last = false
-
-app.options("/update", cors())
-app.post("/update", cors(), (req, res) => {
-    state = req.body;
-    res.send("OK")
+export function updateImmediate() {
     var any_speaking = false
     for (const ch of state?.channels || []) {
         for (const u of ch) {
@@ -81,9 +81,49 @@ app.post("/update", cors(), (req, res) => {
         }
     }
     speaking_last = any_speaking
+    updateEmitter.emit("update")
+
+    if (argv.includes("--log")) {
+        console.log(getBar())
+    }
+}
+
+var speaking_last = false
+
+
+app.use(cors())
+
+app.get("/status", (req, res) => {
+    res.send(getBar())
+})
+
+appws.ws("/ws-status", (ws, req) => {
+    const wsu = () => {
+        if (ws.readyState) ws.send(getBar())
+    }
+    updateEmitter.on("update", wsu)
+    ws.onclose = () => updateEmitter.off("update", wsu)
+})
+
+app.options("/update")
+app.post("/update", (req, res) => {
+    state = req.body;
+    res.send("OK")
+    updateImmediate()
+
+})
+
+appws.ws("/ws-update", (ws, req) => {
+    console.log("WS!!");
+    ws.onmessage = (ev) => {
+        state = JSON.parse(ev.data.toString())
+        updateImmediate()
+    }
 })
 
 
 app.listen(8123, "127.0.0.1", () => {
     console.log("Server running!");
+    //(new WebSocket("asdasd"))
+
 })
