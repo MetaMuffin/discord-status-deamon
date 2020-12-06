@@ -91,8 +91,8 @@ export function updateImmediate() {
             const ch_old = state_last.channels[chname]
             if (!ch_old) continue
 
-            var users_joined = ch_new.filter(u => !ch_old.includes(u))
-            var users_left = ch_old.filter(u => !ch_new.includes(u))
+            var users_joined = ch_new.filter(u => !ch_old.map(q => q.username).includes(u.username))
+            var users_left = ch_old.filter(u => !ch_new.map(q => q.username).includes(u.username))
             users_joined.forEach(u => config.onUserJoinChannel(u, state, state_last))
             users_left.forEach(u => config.onUserLeftChannel(u, state, state_last))
 
