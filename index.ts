@@ -3,7 +3,6 @@ import express from "express"
 import bodyParser from "body-parser"
 import cors from "cors"
 import { config } from "./config"
-import { exec } from "child_process"
 import expressWs from "express-ws"
 import { EventEmitter } from "events"
 import { argv } from "process"
@@ -12,13 +11,18 @@ const app = express()
 app.use(bodyParser.json())
 const appws = expressWs(app).app
 
+export interface UserState {
+    mute: boolean,
+    deaf: boolean,
+    username: string,
+    speaking: boolean,
+    streaming: boolean,
+}
+
 export interface State {
-    channels: undefined | Array<Array<{
-        mute_state: number,
-        username: string,
-        speaking: boolean,
-        streaming: boolean,
-    }>>,
+    channels: undefined | {
+        [key: string]: Array<UserState>
+    },
     self_deaf: boolean,
     self_muted: boolean,
     self_name: string,
@@ -26,8 +30,14 @@ export interface State {
 }
 
 var state: State = { channels: undefined, self_deaf: false, self_muted: false, no_user_info: true, self_name: "" }
+var state_last: State = { channels: undefined, self_deaf: false, self_muted: false, no_user_info: true, self_name: "" }
+
 
 var updateEmitter = new EventEmitter();
+
+export function isSelfUsername(name: string): boolean {
+    return name == state.self_name || config.alternateNicknames?.includes(name)
+}
 
 export function getBar(): string {
     if (!state.channels) return "Cant get info"
@@ -35,52 +45,77 @@ export function getBar(): string {
 
     if (config.showSelfStatus) {
         bar += config.selfStatusLabel + config.colorReset
-        bar += state.self_muted ? `${config.flagColor}M${config.colorReset}` : " "
-        bar += state.self_deaf ? `${config.flagColor}D${config.colorReset}` : " "
+        bar += state.self_muted ? `${config.flagColor}${config.muteFlag}${config.colorReset}` : " "
+        bar += state.self_deaf ? `${config.flagColor}${config.deafFlag}${config.colorReset}` : " "
         bar += config.colorReset + config.modSeperator + config.colorReset
     }
 
     if (config.showUsers) {
         if (state.no_user_info) bar += config.errorColor + "No user info" + config.colorReset
-        var chs_filtered = state.channels.filter(ch => (ch.length > 0))
-
-        bar += chs_filtered.map(ch => {
-            if (!ch.find(u => (u.username == state.self_name || config.alternateNicknames?.includes(state.self_name))) && config.onlyShowCurrentChannel) return "";
-            return ch.map(u => {
+        var ch_format_all = []
+        for (const chname in state.channels) {
+            if (!state.channels.hasOwnProperty(chname)) continue
+            const ch = state.channels[chname];
+            if (ch.length < 1 && config.skipEmptyChannels) continue
+            if (!ch.find(u => isSelfUsername(u.username)) && config.onlyShowCurrentChannel) continue;
+            var before_ch = ""
+            if (config.showChannelName) before_ch = `${config.channelNameColor}${chname}: ${config.colorReset}`
+            ch_format_all.push(before_ch + ch.map(u => {
                 var color = config.defaultColor;
                 if (u.speaking) color = config.speakingColor;
-                if (u.mute_state > 0) color = config.mutedColor;
-                if (u.mute_state > 1) color = config.deafColor;
+                if (u.mute) color = config.mutedColor;
+                if (u.deaf) color = config.deafColor;
                 if (u.streaming) color += config.streamingColor;
 
                 var flags = config.showFlags ? (" "
-                    + (u.speaking ? `${config.flagColor}S${config.colorReset}` : " ")
-                    + ((u.mute_state > 0) ? `${config.flagColor}M${config.colorReset}` : " ")
-                    + ((u.mute_state > 1) ? `${config.flagColor}D${config.colorReset}` : " ")
-                    + ((u.streaming) ? `${config.flagColor}V${config.colorReset}` : " ")
+                    + (u.speaking ? `${config.flagColor}${config.speakingFlag}${config.colorReset}` : " ")
+                    + ((u.mute) ? `${config.flagColor}${config.muteFlag}${config.colorReset}` : " ")
+                    + ((u.deaf) ? `${config.flagColor}${config.deafFlag}${config.colorReset}` : " ")
+                    + ((u.streaming) ? `${config.flagColor}${config.videoFlag}${config.colorReset}` : " ")
                 ) : ""
                 return `${color}${u.username}${config.colorReset}${flags}`
-            }).join(config.userSeperator)
-        }).join(config.onlyShowCurrentChannel ? "" : config.channelSeperator)
+            }).join(config.userSeperator))
+        }
+        bar += ch_format_all.join(config.onlyShowCurrentChannel ? "" : config.channelSeperator)
     }
+
     return bar
 }
 
 export function updateImmediate() {
-    var any_speaking = false
-    for (const ch of state?.channels || []) {
-        for (const u of ch) {
-            if (u.speaking) any_speaking = true
+    for (const chname in state.channels) {
+        if (state.channels.hasOwnProperty(chname)) {
+            const ch_new = state.channels[chname];
+            if (!state_last.channels) continue
+            const ch_old = state_last.channels[chname]
+            if (!ch_old) continue
+
+            var users_joined = ch_new.filter(u => !ch_old.includes(u))
+            var users_left = ch_old.filter(u => !ch_new.includes(u))
+            users_joined.forEach(u => config.onUserJoinChannel(u, state, state_last))
+            users_left.forEach(u => config.onUserLeftChannel(u, state, state_last))
+
+            var ch_zip = ch_new.map(u =>
+                [ch_old.find(uf => uf.username == u.username) || {
+                    deaf: false,
+                    mute: false,
+                    speaking: false,
+                    streaming: false,
+                    username: "[JUST JOINED]"
+                }, u]
+            )
+            ch_zip.filter(([o, n]) => !o.speaking && n.speaking).forEach(u => config.onStartSpeaking(u[0], state, state_last))
+            ch_zip.filter(([o, n]) => o.speaking && !n.speaking).forEach(u => config.onStopSpeaking(u[0], state, state_last))
+            ch_zip.filter(([o, n]) => !o.mute && n.mute).forEach(u => config.onStartMute(u[0], state, state_last))
+            ch_zip.filter(([o, n]) => o.mute && !n.mute).forEach(u => config.onStopMute(u[0], state, state_last))
+            ch_zip.filter(([o, n]) => !o.deaf && n.deaf).forEach(u => config.onStartDeaf(u[0], state, state_last))
+            ch_zip.filter(([o, n]) => o.deaf && !n.deaf).forEach(u => config.onStopDeaf(u[0], state, state_last))
+            ch_zip.filter(([o, n]) => !o.streaming && n.streaming).forEach(u => config.onStartVideo(u[0], state, state_last))
+            ch_zip.filter(([o, n]) => o.streaming && !n.streaming).forEach(u => config.onStopVideo(u[0], state, state_last))
         }
     }
-    if (speaking_last != any_speaking) {
-        if (any_speaking) {
-            exec(config.speakStartCommand)
-        } else {
-            exec(config.speakStopCommand)
-        }
-    }
-    speaking_last = any_speaking
+
+
     updateEmitter.emit("update")
 
     if (argv.includes("--log")) {
@@ -88,7 +123,6 @@ export function updateImmediate() {
     }
 }
 
-var speaking_last = false
 
 
 app.use(cors())
@@ -107,6 +141,7 @@ appws.ws("/ws-status", (ws, req) => {
 
 app.options("/update")
 app.post("/update", (req, res) => {
+    state_last = state
     state = req.body;
     res.send("OK")
     updateImmediate()
@@ -116,6 +151,7 @@ app.post("/update", (req, res) => {
 appws.ws("/ws-update", (ws, req) => {
     console.log("WS!!");
     ws.onmessage = (ev) => {
+        state_last = state
         state = JSON.parse(ev.data.toString())
         updateImmediate()
     }

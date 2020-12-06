@@ -14,6 +14,8 @@ Note: The daemon only provides information about the server that is currently se
     - Run `npm i` to install dependencies
     - Run `npm run start` to start the server
     - Optionally you can setup something that automatically runs this command when you log in.
+1. Initialise the confiuration
+    - Copy `config-default.ts` to `config.ts` or run `init-config.sh`
 1. Patch your Discord client
     - Use the script:
         - Run `patch.sh` with optional argument `canary` to patch discord-canary instead of discord. (This only works on unix-like systems and is still experimental)
