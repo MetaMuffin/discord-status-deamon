@@ -25,6 +25,7 @@ export const config: Config = {
     showChannelName: true,
     channelNameColor: "%{F#004}",
 
+    noFlag: " ",
     deafFlag: "D",
     muteFlag: "M",
     speakingFlag: "S",

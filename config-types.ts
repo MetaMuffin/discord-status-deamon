@@ -22,7 +22,8 @@ export interface Config {
 
     showFlags: boolean,
     flagColor: string,
-
+    
+    noFlag: string,
     deafFlag: string,
     muteFlag: string,
     speakingFlag: string,
@@ -45,6 +46,6 @@ export interface Config {
     onStopDeaf: (user: UserState, state: State, state_last: State) => any,
     onStartVideo: (user: UserState, state: State, state_last: State) => any,
     onStopVideo: (user: UserState, state: State, state_last: State) => any,
-    onStartSpeakingAny: (user: UserState, state: State, state_last: State) => any,
-    onStopSpeakingAny: (user: UserState, state: State, state_last: State) => any,
+    onStartSpeakingAny: (state: State, state_last: State) => any,
+    onStopSpeakingAny: (state: State, state_last: State) => any,
 }

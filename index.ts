@@ -68,10 +68,10 @@ export function getBar(): string {
                 if (u.streaming) color += config.streamingColor;
 
                 var flags = config.showFlags ? (" "
-                    + (u.speaking ? `${config.flagColor}${config.speakingFlag}${config.colorReset}` : " ")
-                    + ((u.mute) ? `${config.flagColor}${config.muteFlag}${config.colorReset}` : " ")
-                    + ((u.deaf) ? `${config.flagColor}${config.deafFlag}${config.colorReset}` : " ")
-                    + ((u.streaming) ? `${config.flagColor}${config.videoFlag}${config.colorReset}` : " ")
+                    + (u.speaking ? `${config.flagColor}${config.speakingFlag}${config.colorReset}` : config.noFlag)
+                    + ((u.mute) ? `${config.flagColor}${config.muteFlag}${config.colorReset}` : config.noFlag)
+                    + ((u.deaf) ? `${config.flagColor}${config.deafFlag}${config.colorReset}` : config.noFlag)
+                    + ((u.streaming) ? `${config.flagColor}${config.videoFlag}${config.colorReset}` : config.noFlag)
                 ) : ""
                 return `${color}${u.username}${config.colorReset}${flags}`
             }).join(config.userSeperator))
@@ -81,8 +81,9 @@ export function getBar(): string {
 
     return bar
 }
-
+var any_speaking_last = false
 export function updateImmediate() {
+    var any_speaking = false
     for (const chname in state.channels) {
         if (state.channels.hasOwnProperty(chname)) {
             const ch_new = state.channels[chname];
@@ -112,9 +113,12 @@ export function updateImmediate() {
             ch_zip.filter(([o, n]) => o.deaf && !n.deaf).forEach(u => config.onStopDeaf(u[0], state, state_last))
             ch_zip.filter(([o, n]) => !o.streaming && n.streaming).forEach(u => config.onStartVideo(u[0], state, state_last))
             ch_zip.filter(([o, n]) => o.streaming && !n.streaming).forEach(u => config.onStopVideo(u[0], state, state_last))
+            if (ch_new.find(u => u.speaking)) any_speaking = true
         }
     }
-
+    if (any_speaking_last && !any_speaking) config.onStopSpeakingAny(state,state_last)
+    if (!any_speaking_last && any_speaking) config.onStartSpeakingAny(state,state_last)
+    any_speaking_last = any_speaking
 
     updateEmitter.emit("update")
 
