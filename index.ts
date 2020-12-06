@@ -39,6 +39,11 @@ export function isSelfUsername(name: string): boolean {
     return name == state.self_name || config.alternateNicknames?.includes(name)
 }
 
+export function escape(s:string):string {
+    if (config.unsafeNames) return s;
+    return s.replace("{","").replace("}","").replace("%","")
+}
+
 export function getBar(): string {
     if (!state.channels) return "Cant get info"
     var bar = ""
@@ -59,7 +64,7 @@ export function getBar(): string {
             if (ch.length < 1 && config.skipEmptyChannels) continue
             if (!ch.find(u => isSelfUsername(u.username)) && config.onlyShowCurrentChannel) continue;
             var before_ch = ""
-            if (config.showChannelName) before_ch = `${config.channelNameColor}${chname}: ${config.colorReset}`
+            if (config.showChannelName) before_ch = `${config.channelNameColor}${escape(chname)}: ${config.colorReset}`
             ch_format_all.push(before_ch + ch.map(u => {
                 var color = config.defaultColor;
                 if (u.speaking) color = config.speakingColor;
@@ -73,7 +78,7 @@ export function getBar(): string {
                     + ((u.deaf) ? `${config.flagColor}${config.deafFlag}${config.colorReset}` : config.noFlag)
                     + ((u.streaming) ? `${config.flagColor}${config.videoFlag}${config.colorReset}` : config.noFlag)
                 ) : ""
-                return `${color}${u.username}${config.colorReset}${flags}`
+                return `${color}${escape(u.username)}${config.colorReset}${flags}`
             }).join(config.userSeperator))
         }
         bar += ch_format_all.join(config.onlyShowCurrentChannel ? "" : config.channelSeperator)

@@ -33,6 +33,7 @@ export interface Config {
     selfStatusLabel: string,
 
     skipEmptyChannels: boolean
+    unsafeNames: boolean,
 
     statePreprocess: (state: State) => any,
 

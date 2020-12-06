@@ -31,13 +31,15 @@ export const config: Config = {
     speakingFlag: "S",
     videoFlag: "V",
 
-    showFlags: true,
-    flagColor: "%{B#333}%{F#FFF}",
-
-    showSelfStatus: true,
     selfStatusLabel: "%{U#409}ME: ",
-
+    flagColor: "%{B#333}%{F#FFF}",
+    
+    showSelfStatus: true,
+    showFlags: true,
+    unsafeNames: true,
     skipEmptyChannels: true,
+
+
 
     onUserJoinChannel: () => { },
     onUserLeftChannel: () => { },
